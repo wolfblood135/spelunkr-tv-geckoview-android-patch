@@ -22,7 +22,7 @@ With Android Studio instead: open the folder, let it sync, then *Build → Build
 
 ## Which APK?
 
-Four files come out:
+Six files come out:
 
 | File | For |
 |---|---|
@@ -30,13 +30,12 @@ Four files come out:
 | `app-modern-arm64-v8a-release.apk` | Android 8+, 64-bit system |
 | `app-legacy-armeabi-v7a-release.apk` | Android 5–7, 32-bit system |
 | `app-legacy-arm64-v8a-release.apk` | Android 5–7, 64-bit system |
+| `app-kiosk-armeabi-v7a-release.apk` | Kiosk mode (see below), Android 5+, 32-bit |
+| `app-kiosk-arm64-v8a-release.apk` | Kiosk mode (see below), Android 5+, 64-bit |
 
 Find the box's values with `adb shell getprop ro.build.version.release` and
 `adb shell getprop ro.product.cpu.abi`. Many boxes run a 32-bit system on a 64-bit chip; go by
 what `cpu.abi` says. When unsure, `armeabi-v7a` runs on both.
-
-| `app-kiosk-armeabi-v7a-release.apk` | Kiosk mode (see below), Android 5+, 32-bit |
-| `app-kiosk-arm64-v8a-release.apk` | Kiosk mode (see below), Android 5+, 64-bit |
 
 `modern` uses GeckoView 146 (needs Android 8). `legacy` is pinned to GeckoView 144, the
 last release that supports Android 5–7.
