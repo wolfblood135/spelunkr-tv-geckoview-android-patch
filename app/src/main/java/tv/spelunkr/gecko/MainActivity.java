@@ -1,10 +1,13 @@
 package tv.spelunkr.gecko;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 
@@ -16,13 +19,18 @@ import org.mozilla.geckoview.GeckoSessionSettings;
 import org.mozilla.geckoview.GeckoView;
 import org.mozilla.geckoview.WebRequestError;
 
+import java.io.File;
+import java.io.FileOutputStream;
+
 /**
  * Spelunkr in a GeckoView: the site runs on Firefox's engine bundled inside the APK,
  * so it no longer depends on the TV box's (often years-old) system WebView.
  */
 public class MainActivity extends Activity {
 
-    private static final String START_URL = "https://spelunkr.tv/";
+    // Kiosk build: "https://spelunkr.tv/?skin=modern" (the site's lighter look)
+    private static final String START_URL = BuildConfig.START_URL;
+    private static final long LONG_PRESS_MS = 1500;
     private static final int SITE_COLOR = 0xFF1C0A57; // the site's own theme color
     private static final long RETRY_MS = 5000;
 
@@ -35,6 +43,7 @@ public class MainActivity extends Activity {
     private boolean canGoBack;
     private boolean fullScreen;
     private String retryUri;
+    private boolean backLongPressed;
 
     private final Runnable retry = () -> {
         if (session != null) session.loadUri(retryUri != null ? retryUri : START_URL);
@@ -52,13 +61,38 @@ public class MainActivity extends Activity {
         setContentView(geckoView);
 
         if (sRuntime == null) {
-            GeckoRuntimeSettings settings = new GeckoRuntimeSettings.Builder()
-                    .consoleOutput(true)
-                    .build();
-            sRuntime = GeckoRuntime.create(getApplicationContext(), settings);
+            GeckoRuntimeSettings.Builder builder = new GeckoRuntimeSettings.Builder()
+                    .consoleOutput(false); // logging every page message costs CPU on weak boxes
+            String config = writeLiteConfig();
+            if (config != null) builder.configFilePath(config);
+            sRuntime = GeckoRuntime.create(getApplicationContext(), builder.build());
         }
 
         openSession();
+    }
+
+    /**
+     * Engine preferences that lower CPU/GPU load (and heat) on weak TV boxes. Kiosk build only.
+     *  - 30 fps rendering instead of 60: old TV video is ~30 fps anyway, half the drawing work
+     *  - reduced motion: the page is told to skip decorative animations
+     *  - no spare content processes kept warm in the background (saves RAM)
+     */
+    private String writeLiteConfig() {
+        if (!BuildConfig.KIOSK) return null;
+        String yaml = "prefs:\n"
+                + "  layout.frame_rate: 30\n"
+                + "  ui.prefersReducedMotion: 1\n"
+                + "  fission.autostart: false\n"
+                + "  dom.ipc.processPrelaunch.enabled: false\n";
+        try {
+            File f = new File(getFilesDir(), "gecko-config.yaml");
+            try (FileOutputStream out = new FileOutputStream(f)) {
+                out.write(yaml.getBytes("UTF-8"));
+            }
+            return f.getAbsolutePath();
+        } catch (Exception e) {
+            return null; // run with engine defaults
+        }
     }
 
     private void openSession() {
@@ -149,18 +183,50 @@ public class MainActivity extends Activity {
         }
     };
 
-    // ---- Remote: BACK leaves fullscreen, then goes back, then exits.
+    // ---- Remote: BACK leaves fullscreen, then goes back, then exits (kiosk: stays put).
+    //      Kiosk: holding BACK for 1.5 s opens the box's Settings, the way out of kiosk mode.
     //      D-pad, OK, media and channel keys go straight to the page. ----
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent e) {
+        if (e.getKeyCode() != KeyEvent.KEYCODE_BACK) return super.dispatchKeyEvent(e);
+
+        if (e.getAction() == KeyEvent.ACTION_DOWN) {
+            if (e.getRepeatCount() == 0) {
+                backLongPressed = false;
+            } else if (BuildConfig.KIOSK && !backLongPressed
+                    && e.getEventTime() - e.getDownTime() >= LONG_PRESS_MS) {
+                backLongPressed = true;
+                openSystemSettings();
+            }
+        } else if (e.getAction() == KeyEvent.ACTION_UP) {
+            if (!backLongPressed && !e.isCanceled()) handleBack();
+        }
+        return true;
+    }
 
     @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
+        handleBack(); // touch / gesture back
+    }
+
+    private void handleBack() {
         if (fullScreen && session != null) {
             session.exitFullScreen();
         } else if (canGoBack && session != null) {
             session.goBack();
-        } else {
-            super.onBackPressed();
+        } else if (!BuildConfig.KIOSK) {
+            finish();
+        }
+        // Kiosk at the first page: nothing to leave to, stay on Spelunkr
+    }
+
+    private void openSystemSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (Exception ignored) {
+            // no Settings app reachable on this box
         }
     }
 

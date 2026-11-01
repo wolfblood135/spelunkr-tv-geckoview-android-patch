@@ -35,6 +35,9 @@ Find the box's values with `adb shell getprop ro.build.version.release` and
 `adb shell getprop ro.product.cpu.abi`. Many boxes run a 32-bit system on a 64-bit chip; go by
 what `cpu.abi` says. When unsure, `armeabi-v7a` runs on both.
 
+| `app-kiosk-armeabi-v7a-release.apk` | Kiosk mode (see below), Android 5+, 32-bit |
+| `app-kiosk-arm64-v8a-release.apk` | Kiosk mode (see below), Android 5+, 64-bit |
+
 `modern` uses GeckoView 146 (needs Android 8). `legacy` is pinned to GeckoView 144, the
 last release that supports Android 5–7.
 
@@ -47,6 +50,19 @@ last release that supports Android 5–7.
 - Shows a "NO SIGNAL" screen when offline and retries every 5 seconds.
 - Restarts the page if the engine's content process crashes.
 - Pauses when you leave the app.
+
+## Kiosk build (weak boxes that heat up and stutter)
+
+"Spelunkr Kiosk" installs as its own app and is tuned for the lowest resource use:
+
+- **Home-screen app:** after installing, press HOME, pick *Spelunkr Kiosk* and choose *Always*.
+  The box then boots straight into Spelunkr and nothing else runs in the foreground.
+- **Lighter look:** opens `spelunkr.tv/?skin=modern` instead of the shadow-heavy classic skin.
+- **30 fps rendering**, reduced motion and no spare background processes.
+- BACK never leaves the app. **Hold BACK for 1.5 seconds** to open the box's Settings.
+- To undo: Settings → Apps → Spelunkr Kiosk → *Clear defaults* (or uninstall it).
+
+For more headroom, set the box's output resolution to 720p.
 
 ## Notes
 

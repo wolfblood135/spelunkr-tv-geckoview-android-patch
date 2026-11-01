@@ -10,13 +10,22 @@ android {
         // Different from the official app (tv.spelunkr.app), so both can be installed side by side
         applicationId "tv.spelunkr.gecko"
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
+
+        buildConfigField "boolean", "KIOSK", "false"
+        buildConfigField "String", "START_URL", "\"https://spelunkr.tv/\""
     }
 
-    // Two builds, because GeckoView 145+ requires Android 8 (API 26):
-    //   modern -> latest GeckoView, Android 8.0 and newer
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Three builds (GeckoView 145+ requires Android 8 / API 26):
+    //   modern -> GeckoView 146, Android 8.0 and newer
     //   legacy -> GeckoView 144 (last one for Android 5-7), Android 5.0 and newer
+    //   kiosk  -> legacy engine as a home-screen app for weak boxes: boots straight into
+    //             Spelunkr, uses the site's lighter "modern" skin, caps rendering at 30 fps
     flavorDimensions "engine"
     productFlavors {
         modern {
@@ -27,6 +36,14 @@ android {
             dimension "engine"
             minSdk 21
             versionNameSuffix "-legacy"
+        }
+        kiosk {
+            dimension "engine"
+            minSdk 21
+            applicationIdSuffix ".kiosk"
+            versionNameSuffix "-kiosk"
+            buildConfigField "boolean", "KIOSK", "true"
+            buildConfigField "String", "START_URL", "\"https://spelunkr.tv/?skin=modern\""
         }
     }
 
@@ -64,4 +81,5 @@ dependencies {
     // 146 builds with this setup and is plenty modern for the site.
     modernImplementation "org.mozilla.geckoview:geckoview:146.+"
     legacyImplementation "org.mozilla.geckoview:geckoview:144.+"
+    kioskImplementation "org.mozilla.geckoview:geckoview:144.+"
 }
