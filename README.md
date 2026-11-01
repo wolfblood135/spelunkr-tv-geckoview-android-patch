@@ -35,7 +35,7 @@ Find the box's values with `adb shell getprop ro.build.version.release` and
 `adb shell getprop ro.product.cpu.abi`. Many boxes run a 32-bit system on a 64-bit chip; go by
 what `cpu.abi` says. When unsure, `armeabi-v7a` runs on both.
 
-`modern` uses the latest GeckoView (needs Android 8). `legacy` is pinned to GeckoView 144, the
+`modern` uses GeckoView 146 (needs Android 8). `legacy` is pinned to GeckoView 144, the
 last release that supports Android 5–7.
 
 ## What it does
@@ -52,5 +52,5 @@ last release that supports Android 5–7.
 
 - Release APKs are signed with the CI's debug key, which changes per build. To install a newer
   build, uninstall the old one first.
-- If a future GeckoView release breaks the build, pin `modernImplementation` in
-  `app/build.gradle` to a working version (e.g. `146.+`).
+- GeckoView 159 and newer need compileSdk 37 and Android Gradle plugin 9.1+; moving to them
+  means upgrading those in `build.gradle` / `app/build.gradle` first.

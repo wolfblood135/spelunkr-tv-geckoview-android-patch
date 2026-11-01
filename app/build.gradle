@@ -60,7 +60,8 @@ android {
 }
 
 dependencies {
-    // If a newer GeckoView ever breaks the build, pin it here, e.g. "org.mozilla.geckoview:geckoview:146.+"
-    modernImplementation "org.mozilla.geckoview:geckoview:+"
+    // Pinned: GeckoView 159+ needs compileSdk 37 and Android Gradle plugin 9.1+.
+    // 146 builds with this setup and is plenty modern for the site.
+    modernImplementation "org.mozilla.geckoview:geckoview:146.+"
     legacyImplementation "org.mozilla.geckoview:geckoview:144.+"
 }
