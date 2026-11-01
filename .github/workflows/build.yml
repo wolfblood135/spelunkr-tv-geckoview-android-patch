@@ -1,0 +1,48 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Build modern + legacy APKs
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Collect APKs
+        run: |
+          mkdir out
+          find app/build/outputs/apk -name "*.apk" -exec cp {} out/ \;
+          ls -lh out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spelunkr-gecko-apks
+          path: out/*.apk
+
+      # Publishes the APKs as a GitHub Release, so each one has a fixed direct link:
+      # https://github.com/<user>/<repo>/releases/latest/download/<file>.apk
+      - name: Publish release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Spelunkr Gecko build ${{ github.run_number }}
+          make_latest: true
+          files: out/*.apk
